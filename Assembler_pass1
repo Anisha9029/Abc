@@ -1,0 +1,60 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>   // for atoi()
+
+struct Symbol { char name[10]; int addr; } sym[10];
+struct Literal { char name[10]; int addr; } lit[10];
+char mot[][10] = {"STOP","ADD","SUB","MUL","MOVER","MOVEM"};
+
+int main() {
+    FILE *in = fopen("input.asm","r"), *out = fopen("ir.dat","w");
+    if(!in){ printf("File not found!\n"); return 0; }
+
+    char w1[10], w2[10], w3[10];
+    int lc=0, ns=0, nl=0;
+
+    while (fscanf(in,"%s",w1)!=EOF) {
+        if (!strcmp(w1,"START")) { fscanf(in,"%d",&lc); fprintf(out,"AD 1 C %d\n",lc); continue; }
+        if (!strcmp(w1,"END")) { 
+            for(int i=0;i<nl;i++){ fprintf(out,"AD 2 C %s\n",lit[i].name); lit[i].addr=lc++; }
+            break;
+        }
+
+        int isMOT=-1;
+        for(int i=0;i<6;i++) if(!strcmp(w1,mot[i])) isMOT=i;
+
+        if (isMOT!=-1) {  // Instruction
+            fscanf(in,"%s%s",w2,w3);
+            fprintf(out,"IS %d %d ",isMOT+1,w2[0]-'A'+1);
+            if(w3[0]=='='){ strcpy(lit[nl].name,w3+1); fprintf(out,"L%d\n",nl++); }
+            else { strcpy(sym[ns].name,w3); fprintf(out,"S%d\n",ns++); }
+            lc++;
+        } 
+        else {  // DC/DS
+            fscanf(in,"%s%s",w2,w3);
+            sym[ns].addr=lc;
+            fprintf(out,"DL %s %s\n",(!strcmp(w2,"DS")?"2":"1"),w3);
+            if(!strcmp(w2,"DS")) lc+=atoi(w3); else lc++;
+            strcpy(sym[ns++].name,w1);
+        }
+    }
+
+    printf("SYMBOL TABLE:\nEntry\tSymbol\tAddress\n");
+    for(int i=0;i<ns;i++) printf("%d\t%s\t%d\n",i,sym[i].name,sym[i].addr);
+
+    printf("\nLITERAL TABLE:\nEntry\tLiteral\tAddress\n");
+    for(int i=0;i<nl;i++) printf("%d\t%s\t%d\n",i,lit[i].name,lit[i].addr);
+
+    fclose(in); fclose(out);
+    return 0;
+}
+
+input.asm
+START 100
+MOVER AREG, A
+ADD BREG, =5
+MOVEM AREG, RESULT
+A DS 1
+RESULT DC 2
+END
+
