@@ -1,0 +1,60 @@
+#include <stdio.h>
+#include <string.h>
+
+struct Symbol { char name[20]; int addr; } sym[50];
+struct Literal { char name[20]; int addr; } lit[50];
+
+int main() {
+    FILE *ir = fopen("ir.dat", "r");
+    FILE *fs = fopen("symtab.dat", "r");
+    FILE *fl = fopen("littab.dat", "r");
+    FILE *out = fopen("machine_code.dat", "w");
+    if (!ir || !fs || !fl || !out) { printf("File open error!\n"); return 1; }
+
+    int ns=0, nl=0, lc=0;
+    while (fscanf(fs, "%s %d", sym[ns].name, &sym[ns].addr)==2) ns++;
+    while (fscanf(fl, "%s %d", lit[nl].name, &lit[nl].addr)==2) nl++;
+
+    char tok[20], type[5];
+    int code, reg, mem, id, val;
+
+    while (fscanf(ir, "%s", tok)!=EOF) {
+        if (tok[0]=='(') {
+            sscanf(tok, "(%[^,],%d)", type, &code);
+
+            if (!strcmp(type,"IS")) {
+                fscanf(ir,"%s",tok);
+                reg = mem = 0;
+                if (tok[1]=='R') { sscanf(tok,"(R,%d)",&reg); fscanf(ir,"%s",tok); }
+                if (tok[1]=='S') { sscanf(tok,"(S,%d)",&id); mem = sym[id-1].addr; }
+                else if (tok[1]=='L') { sscanf(tok,"(L,%d)",&id); mem = lit[id-1].addr; }
+                fprintf(out,"%03d %02d %d %03d\n",lc++,code,reg,mem);
+            }
+
+            else if (!strcmp(type,"DL")) {
+                fscanf(ir,"%d",&val);
+                if (code==1) fprintf(out,"%03d 00 0 %03d\n",lc++,val);
+                else lc += val;
+            }
+        }
+    }
+
+    fclose(ir); fclose(fs); fclose(fl); fclose(out);
+    printf("Machine code generated in 'machine_code.dat'\n");
+    return 0;
+}
+
+
+ir.dat
+(IS,04) (R,1) (S,1)
+(IS,05) (R,2) (L,1)
+(DL,01) 10
+(DL,02) 2
+
+littab.dat
+='5' 300
+='1' 301
+
+symtab.dat
+X 205
+Y 210
