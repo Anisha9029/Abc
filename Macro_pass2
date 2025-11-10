@@ -1,0 +1,98 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define MAX 50
+
+typedef struct {
+    char name[MAX];
+    int mdt_index;
+} MNTEntry;
+
+typedef struct {
+    char line[MAX];
+} MDTEntry;
+
+int main() {
+    FILE *fmnt, *fmdt, *fir, *fout;
+    MNTEntry mnt[20];
+    MDTEntry mdt[100];
+    int mnt_count = 0, mdt_count = 0;
+    char word[MAX];
+
+    // Open files
+    fmnt = fopen("mnt.dat", "r");
+    fmdt = fopen("mdt.dat", "r");
+    fir = fopen("ir.dat", "r");
+    fout = fopen("output.dat", "w");
+
+    if (!fmnt || !fmdt || !fir || !fout) {
+        printf("Error opening files!\n");
+        return 1;
+    }
+
+    // Read MNT
+    while (fscanf(fmnt, "%*d %s", word) != EOF) {
+        strcpy(mnt[mnt_count].name, word);
+        mnt[mnt_count].mdt_index = mnt_count + 1; // Assume sequential MDT index
+        mnt_count++;
+    }
+
+    // Read MDT
+    char buffer[MAX];
+    while (fgets(buffer, sizeof(buffer), fmdt)) {
+        buffer[strcspn(buffer, "\n")] = '\0'; // remove newline
+        strcpy(mdt[mdt_count].line, buffer);
+        mdt_count++;
+    }
+
+    // Process IR
+    while (fscanf(fir, "%s", word) != EOF) {
+        int is_macro = -1;
+
+        // Check if word is a macro name
+        for (int i = 0; i < mnt_count; i++) {
+            if (strcmp(word, mnt[i].name) == 0) {
+                is_macro = i;
+                break;
+            }
+        }
+
+        if (is_macro != -1) {
+            // Macro expansion
+            int idx = mnt[is_macro].mdt_index;
+
+            for (int j = idx; j < mdt_count; j++) {
+                if (strstr(mdt[j].line, "MEND")) break;
+                fprintf(fout, "%s\n", mdt[j].line + 2); // skip line numbers
+            }
+        } else {
+            // Normal instruction
+            fprintf(fout, "%s ", word);
+        }
+    }
+
+    fclose(fmnt);
+    fclose(fmdt);
+    fclose(fir);
+    fclose(fout);
+
+    printf("\nPass-2 completed. Expanded code written to output.dat\n");
+    return 0;
+}
+
+ir.dat
+START INCR A END
+mnt.dat
+1 INCR
+
+mdt.dat
+1 INCR
+2 &A
+3 LDA
+4 &A
+5 ADD
+6 ONE
+7 STA
+8 &A
+9 MEND
