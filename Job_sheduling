@@ -1,0 +1,60 @@
+#include <stdio.h>
+
+struct Process {
+    int pid, burst, priority, wait, tat;
+};
+
+void calculate(struct Process p[], int n) {
+    p[0].wait = 0;
+    for (int i = 1; i < n; i++)
+        p[i].wait = p[i-1].wait + p[i-1].burst;
+    for (int i = 0; i < n; i++)
+        p[i].tat = p[i].wait + p[i].burst;
+}
+
+void print(struct Process p[], int n) {
+    float tw = 0, tt = 0;
+    printf("\nPID\tBurst\tPrio\tWait\tTurn\n");
+    for (int i = 0; i < n; i++) {
+        printf("%d\t%d\t%d\t%d\t%d\n", p[i].pid, p[i].burst, p[i].priority, p[i].wait, p[i].tat);
+        tw += p[i].wait; tt += p[i].tat;
+    }
+    printf("Avg Wait: %.2f\nAvg Turn: %.2f\n", tw/n, tt/n);
+}
+
+void sort(struct Process p[], int n, int by) {
+    for (int i = 0; i < n-1; i++)
+        for (int j = 0; j < n-i-1; j++)
+            if ((by==1 && p[j].burst > p[j+1].burst) || (by==2 && p[j].priority > p[j+1].priority)) {
+                struct Process t = p[j]; p[j] = p[j+1]; p[j+1] = t;
+            }
+}
+
+int main() {
+    int n, ch;
+    struct Process p[20], temp[20];
+
+    printf("Enter number of processes: ");
+    scanf("%d", &n);
+
+    for (int i = 0; i < n; i++) {
+        p[i].pid = i + 1;
+        printf("Burst time for P%d: ", i+1);
+        scanf("%d", &p[i].burst);
+        printf("Priority for P%d: ", i+1);
+        scanf("%d", &p[i].priority);
+    }
+
+    do {
+        printf("\n1.FCFS  2.SJF  3.Priority  4.Exit\nEnter choice: ");
+        scanf("%d", &ch);
+        for (int i = 0; i < n; i++) temp[i] = p[i];
+
+        if (ch == 1) printf("\n--- FCFS ---\n");
+        if (ch == 2) printf("\n--- SJF ---\n"), sort(temp, n, 1);
+        if (ch == 3) printf("\n--- Priority ---\n"), sort(temp, n, 2);
+        if (ch >= 1 && ch <= 3) { calculate(temp, n); print(temp, n); }
+    } while (ch != 4);
+
+    return 0;
+}
