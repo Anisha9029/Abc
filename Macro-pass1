@@ -1,0 +1,66 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+int main() {
+    int sno = 1, mdno = 1;
+    char word[50];
+    FILE *fip, *fmnt, *fmdt, *fir;
+
+    fip = fopen("input.dat", "r");
+    fmnt = fopen("mnt.dat", "w");
+    fmdt = fopen("mdt.dat", "w");
+    fir = fopen("ir.dat", "w");
+
+    if (!fip || !fmnt || !fmdt || !fir) {
+        printf("Error opening files!\n");
+        return 1;
+    }
+
+    while (fscanf(fip, "%s", word) != EOF) {
+        if (strcmp(word, "MACRO") == 0) {
+            // Read macro name
+            fscanf(fip, "%s", word);
+            fprintf(fmnt, "%d %s\n", sno++, word);
+            fprintf(fmdt, "%d %s\n", mdno++, word);
+
+            // Read till MEND
+            while (fscanf(fip, "%s", word) != EOF && strcmp(word, "MEND") != 0) {
+                fprintf(fmdt, "%d %s\n", mdno++, word);
+            }
+            fprintf(fmdt, "%d MEND\n", mdno++);
+        }
+        else if (strcmp(word, "END") == 0) {
+            fprintf(fir, "END\n");
+            break;
+        }
+        else {
+            fprintf(fir, "%s ", word);
+        }
+    }
+
+    fclose(fip);
+    fclose(fmnt);
+    fclose(fmdt);
+    fclose(fir);
+
+    printf("\n CODE IS WRITTEN IN MNT.DAT, MDT.DAT & IR.DAT FILES\n");
+    return 0;
+}
+
+
+input.dat
+MACRO ADDITION
+LOAD A
+ADD AREG B
+ADD AREG C
+MEND
+START
+MOVER AREG A
+MOVER BREG B
+ADDITION
+STORE X
+A DS 5
+B DC 10
+C DC 15
+END
